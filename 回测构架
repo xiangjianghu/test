@@ -1,0 +1,46 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import glob
+import datetime
+
+rptdates=pd.read_csv(r'C:\Users\xiangjiang.hu\Desktop\data2\rptdates.csv',index_col=[0])
+asset=pd.read_csv(r'C:\Users\xiangjiang.hu\Desktop\data2\BalanceFields_Concat\tot_cur_assets.csv',index_col=[0])
+liab=pd.read_csv(r'C:\Users\xiangjiang.hu\Desktop\data2\BalanceFields_Concat\tot_cur_liab.csv',index_col=[0])
+rptdates=rptdates.loc[:,asset.columns]
+liab=liab.loc[:,asset.columns]
+
+ocf1=asset/liab
+def data_process(x):
+    N=x.copy()
+    for i in (x.dropna()).index:
+            N[i]=ocf1.loc[x[i],x.name] 
+    return N
+M=rptdates.copy()
+ocf2=M.apply(data_process,axis=0)
+ocf3=ocf2.fillna(method='pad',limit=200)
+
+pct=pd.read_csv(r'C:\Users\xiangjiang.hu\Desktop\data2\pct_prm.csv',index_col=[0])
+ocf3=ocf3.loc[:,pct.columns]
+pct_chg=pct.loc[20130105:20180508]
+OCF=ocf3.loc[20130101:20180507]
+RDS=OCF
+A1=RDS.rank(axis=1,pct=True)
+pct2=pct_chg.as_matrix()
+B=A1.as_matrix()
+final=np.array([(B.reshape(np.size(B))),(pct2.reshape(np.size(pct2)))])
+final1=pd.DataFrame(final.T)
+final2=final1.sort_values(0)
+final3=final2.dropna()
+plt.plot(final3[0],final3[1].cumsum())
+plt.show() 
+
+Final1=((A1>0.8))
+pct_chg=pct.loc[20130105:20180508]
+M=pct_chg.index.copy()
+M=pd.Series(M)
+for i in range(len(pct_chg)):
+    M[i]=datetime.datetime.strptime(str(pct_chg.index[i]),'%Y%m%d')
+Final1.index=pct_chg.index=M
+plt.plot((pct_chg[Final1==1]).mean(axis=1).cumsum())
+plt.show()
